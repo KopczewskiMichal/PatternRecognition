@@ -1,0 +1,47 @@
+{
+  "os": "Windows-10-10.0.19045-SP0",
+  "python": "CPython 3.12.12",
+  "startedAt": "2025-11-03T15:56:19.974479Z",
+  "args": [
+    "--mode",
+    "simclr",
+    "--batch_size",
+    "32",
+    "--epochs",
+    "20",
+    "--num_workers",
+    "0",
+    "--wandb"
+  ],
+  "program": "C:\\Users\\Milosz\\Desktop\\PR2\\Lab2\\train.py",
+  "codePath": "train.py",
+  "codePathLocal": "train.py",
+  "email": "milosz.adamczyk2002@gmail.com",
+  "root": "C:\\Users\\Milosz\\Desktop\\PR2\\Lab2",
+  "host": "DESKTOP-UM6MBAK",
+  "executable": "C:\\Users\\Milosz\\anaconda3\\envs\\URWGSN\\python.exe",
+  "cpu_count": 4,
+  "cpu_count_logical": 8,
+  "gpu": "NVIDIA GeForce GTX 1650 Ti",
+  "gpu_count": 1,
+  "disk": {
+    "/": {
+      "total": "511401943040",
+      "used": "364233789440"
+    }
+  },
+  "memory": {
+    "total": "17002713088"
+  },
+  "gpu_nvidia": [
+    {
+      "name": "NVIDIA GeForce GTX 1650 Ti",
+      "memoryTotal": "4294967296",
+      "cudaCores": 1024,
+      "architecture": "Turing",
+      "uuid": "GPU-969486da-44e4-ee14-483a-09654cfbc580"
+    }
+  ],
+  "cudaVersion": "12.6",
+  "writerId": "1dypvoinj3gsmraxbi4kboz62e02yfva"
+}

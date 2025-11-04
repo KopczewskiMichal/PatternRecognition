@@ -1,0 +1,41 @@
+Traceback (most recent call last):
+  File "C:\Users\Milosz\Desktop\PR2\Lab2\train.py", line 159, in <module>
+    main()
+  File "C:\Users\Milosz\Desktop\PR2\Lab2\train.py", line 151, in main
+    train_classifier(model, train_loader, test_loader, device, args.epochs, args.lr, use_wandb=args.wandb)
+  File "C:\Users\Milosz\Desktop\PR2\Lab2\train.py", line 85, in train_classifier
+    outputs = model(x)
+              ^^^^^^^^
+  File "C:\Users\Milosz\anaconda3\envs\URWGSN\Lib\site-packages\torch\nn\modules\module.py", line 1775, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Milosz\anaconda3\envs\URWGSN\Lib\site-packages\torch\nn\modules\module.py", line 1786, in _call_impl
+    return forward_call(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Milosz\Desktop\PR2\Lab2\src\model.py", line 62, in forward
+    features = self.backbone(x)
+               ^^^^^^^^^^^^^^^^
+  File "C:\Users\Milosz\anaconda3\envs\URWGSN\Lib\site-packages\torch\nn\modules\module.py", line 1775, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Milosz\anaconda3\envs\URWGSN\Lib\site-packages\torch\nn\modules\module.py", line 1786, in _call_impl
+    return forward_call(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Milosz\anaconda3\envs\URWGSN\Lib\site-packages\timm\models\vision_transformer.py", line 992, in forward
+    x = self.forward_features(x, attn_mask=attn_mask)
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Milosz\anaconda3\envs\URWGSN\Lib\site-packages\timm\models\vision_transformer.py", line 935, in forward_features
+    x = self.patch_embed(x)
+        ^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Milosz\anaconda3\envs\URWGSN\Lib\site-packages\torch\nn\modules\module.py", line 1775, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Milosz\anaconda3\envs\URWGSN\Lib\site-packages\torch\nn\modules\module.py", line 1786, in _call_impl
+    return forward_call(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Milosz\anaconda3\envs\URWGSN\Lib\site-packages\timm\layers\patch_embed.py", line 121, in forward
+    _assert(H == self.img_size[0], f"Input height ({H}) doesn't match model ({self.img_size[0]}).")
+  File "C:\Users\Milosz\anaconda3\envs\URWGSN\Lib\site-packages\torch\__init__.py", line 2185, in _assert
+    assert condition, message
+           ^^^^^^^^^
+AssertionError: Input height (224) doesn't match model (64).

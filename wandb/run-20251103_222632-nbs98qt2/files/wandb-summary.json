@@ -1,0 +1,1 @@
+{"_wandb":{"runtime":36446},"_runtime":36446,"_timestamp":1.7622416422945397e+09,"_step":49,"Classifier Train Loss":0.042188760699685086,"Classifier Train Acc":98.6388530927835,"Classifier Test Acc":59.940378289473685,"Epoch":50}
