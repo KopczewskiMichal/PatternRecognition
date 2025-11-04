@@ -141,7 +141,7 @@ def main():
         if args.pretrained_simclr:
             model.load_state_dict(torch.load(args.pretrained_simclr))
         train_simclr(model, train_loader, device, args.epochs, args.lr, use_wandb=args.wandb)
-        torch.save(model.state_dict(), "simclr_vit.pth")
+        torch.save(model.state_dict(), "trained_models/simclr_vit.pth")
 
     else:  # classifier fine-tuning
         simclr_model = SimCLRViT(projection_dim=128)
@@ -149,7 +149,7 @@ def main():
             simclr_model.load_state_dict(torch.load(args.pretrained_simclr))
         model = ViTWithClassifier(simclr_model, num_classes=10)
         train_classifier(model, train_loader, test_loader, device, args.epochs, args.lr, use_wandb=args.wandb)
-        torch.save(model.state_dict(), "vit_cifar10.pth")
+        torch.save(model.state_dict(), "trained_models/vit_cifar10.pth")
 
     if args.wandb:
         wandb.finish()
