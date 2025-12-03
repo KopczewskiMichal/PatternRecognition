@@ -12,7 +12,7 @@ from matplotlib.path import Path
 
 # --- KONFIGURACJA ---
 PATCH_SIZE = 28  # Twój model wymaga wejścia 28x28 (wynika z architektury)
-LEVEL = 1  # Poziom powiększenia (0 = max, 1 = 4x mniejszy, itd.). 1 jest szybszy.
+LEVEL = 2  # Poziom powiększenia (0 = max, 1 = 4x mniejszy, itd.). 1 jest szybszy.
 BAG_SIZE = 100  # Ile wycinków (instancji) w jednym worku. Zmniejsz jeśli braknie VRAM.
 TISSUE_THRESHOLD = 220  # Jasność powyżej której uznajemy, że to białe tło (0-255)
 
@@ -236,3 +236,101 @@ class CameleyonBagDataset(Dataset):
 
         if total_slides == 0:
             raise ValueError("BŁĄD FATALNY: Nie znaleziono żadnych slajdów WSI. Sprawdź ścieżki i rozszerzenia.")
+
+
+class CameleyonTestDataset(Dataset):
+    def __init__(self, normal_dir, tumor_dir, bag_size=100, transform=None):
+        self.normal_files = glob.glob(os.path.join(normal_dir, '*.tif'))
+        self.tumor_files = glob.glob(os.path.join(tumor_dir, '*.tif'))
+        self.bag_size = bag_size
+
+        # Budujemy listę
+        self.slide_paths = []
+        self.labels = []
+
+        for p in self.normal_files:
+            self.slide_paths.append(p)
+            self.labels.append(0)  # 0 = Zdrowy
+
+        for p in self.tumor_files:
+            self.slide_paths.append(p)
+            self.labels.append(1)  # 1 = Chory
+
+        # Standardowa transformacja
+        if transform is None:
+            self.transform = transforms.Compose([
+                transforms.Grayscale(num_output_channels=1),
+                transforms.Resize((PATCH_SIZE, PATCH_SIZE)),
+                transforms.ToTensor(),
+            ])
+        else:
+            self.transform = transform
+
+        self._validate_paths()
+
+    def __len__(self):
+        return len(self.slide_paths)
+
+    def __getitem__(self, idx):
+        slide_path = self.slide_paths[idx]
+        label = self.labels[idx]
+
+        wsi = openslide.OpenSlide(slide_path)
+        level = LEVEL if LEVEL < wsi.level_count else wsi.level_count - 1
+
+        # W teście NIE używamy XML.
+        # Model musi sam znaleźć raka w losowo pobranej tkance.
+        patches = self._sample_tissue_patches(wsi, level, self.bag_size)
+
+        # Zabezpieczenie przed pustym workiem
+        if len(patches) < self.bag_size:
+            diff = self.bag_size - len(patches)
+            if len(patches) > 0:
+                patches += [patches[0]] * diff
+            else:
+                patches = [torch.zeros(1, PATCH_SIZE, PATCH_SIZE)] * self.bag_size
+
+        bag_tensor = torch.stack(patches)
+        wsi.close()
+
+        return bag_tensor, torch.tensor([label], dtype=torch.float32)
+
+    def _sample_tissue_patches(self, wsi, level, count):
+        """
+        Pobiera losowe wycinki, ale tylko jeśli nie są białym tłem.
+        W teście traktujemy tak samo pliki Normal i Tumor.
+        """
+        patches = []
+        w_lvl, h_lvl = wsi.level_dimensions[level]
+        downsample = wsi.level_downsamples[level]
+
+        attempts = 0
+        max_attempts = count * 10  # Dajemy mu więcej szans na znalezienie tkanki
+
+        while len(patches) < count and attempts < max_attempts:
+            attempts += 1
+            x_lvl = random.randint(0, w_lvl - PATCH_SIZE)
+            y_lvl = random.randint(0, h_lvl - PATCH_SIZE)
+
+            x_0 = int(x_lvl * downsample)
+            y_0 = int(y_lvl * downsample)
+
+            try:
+                patch = wsi.read_region((x_0, y_0), level, (PATCH_SIZE, PATCH_SIZE))
+                patch = patch.convert('RGB')
+
+                # Prosty check: czy to nie jest białe tło?
+                np_patch = np.array(patch)
+                if np_patch.mean() < TISSUE_THRESHOLD:
+                    patches.append(self.transform(patch))
+            except:
+                continue
+
+        return patches
+
+    def _validate_paths(self):
+        print("\n--- TEST DATASET DIAGNOSTICS ---")
+        print(f"Test Normal: {len(self.normal_files)} slides")
+        print(f"Test Tumor: {len(self.tumor_files)} slides")
+        if len(self.normal_files) + len(self.tumor_files) == 0:
+            print("WARNING: Pusty zbiór testowy!")
