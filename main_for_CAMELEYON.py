@@ -13,21 +13,20 @@ from model import Attention, GatedAttention
 
 # Ustawienia treningu
 parser = argparse.ArgumentParser(description='PyTorch CAMELEYON16 MIL Example')
+parser.add_argument('--bag_size', type=int, default=50, metavar='BS',
+                    help='number of patches per bag (WSI)')
 parser.add_argument('--epochs', type=int, default=20, metavar='N',
-                    help='number of epochs to train (default: 20)')
+                    help='number of epochs to train')
 parser.add_argument('--lr', type=float, default=0.0005, metavar='LR',
                     help='learning rate (default: 0.0005)')
 parser.add_argument('--reg', type=float, default=10e-5, metavar='R',
                     help='weight decay')
-parser.add_argument('--bag_size', type=int, default=400, metavar='BS',
-                    help='number of patches per bag (WSI)')
 parser.add_argument('--seed', type=int, default=1, metavar='S',
                     help='random seed (default: 1)')
 parser.add_argument('--no-cuda', action='store_true', default=False,
                     help='disables CUDA training')
 parser.add_argument('--model', type=str, default='attention', help='Choose b/w attention and gated_attention')
 
-# --- ŚCIEŻKI TRENINGOWE (Wymagają XML) ---
 parser.add_argument('--train_normal_dir', type=str, default=r'D:\CAMELEYON16\training\normal',
                     help='Path to TRAIN normal .tif files')
 parser.add_argument('--train_tumor_dir', type=str, default=r"D:\CAMELEYON16\training\tumor",
@@ -44,7 +43,6 @@ args.cuda = not args.no_cuda and torch.cuda.is_available()
 
 print(args)
 
-# Ziarno losowości
 torch.manual_seed(args.seed)
 if args.cuda:
     torch.cuda.manual_seed(args.seed)
@@ -55,7 +53,6 @@ else:
 
 loader_kwargs = {'num_workers': 0, 'pin_memory': True} if args.cuda else {}
 
-# 1. ZBIÓR TRENINGOWY
 print('\n--- LOADING TRAIN SET ---')
 try:
     train_set = CameleyonBagDataset(
@@ -70,7 +67,6 @@ except Exception as e:
     print(f"CRITICAL ERROR loading Train Set: {e}")
     sys.exit(1)
 
-# 2. ZBIÓR TESTOWY
 print('\n--- LOADING TEST SET ---')
 try:
     test_set = CameleyonTestDataset(
@@ -142,8 +138,10 @@ def test(loader):
 
             loss, _ = model.calculate_objective(data, bag_label)
             test_loss += loss.item()
-            error, _ = model.calculate_classification_error(data, bag_label)
+            error, predicted_label = model.calculate_classification_error(data, bag_label)
             test_error += error
+
+            tqdm.write(f'[Test] Batch {batch_idx}: True: {int(bag_label.item())} | Pred: {int(predicted_label.item())}')
 
             # Wypisujemy aktualny loss w pasku
             pbar.set_postfix({'TLoss': f'{loss.item():.4f}'})

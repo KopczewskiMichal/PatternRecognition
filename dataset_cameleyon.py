@@ -12,7 +12,7 @@ from matplotlib.path import Path
 
 # --- KONFIGURACJA ---
 PATCH_SIZE = 28  # Twój model wymaga wejścia 28x28 (wynika z architektury)
-LEVEL = 2  # Poziom powiększenia (0 = max, 1 = 4x mniejszy, itd.). 1 jest szybszy.
+LEVEL = 3  # Poziom powiększenia (0 = max, 1 = 4x mniejszy, itd.). 1 jest szybszy.
 BAG_SIZE = 100  # Ile wycinków (instancji) w jednym worku. Zmniejsz jeśli braknie VRAM.
 TISSUE_THRESHOLD = 220  # Jasność powyżej której uznajemy, że to białe tło (0-255)
 
