@@ -3,10 +3,6 @@ import os
 
 
 def save_level_as_jpg(tiff_path, output_path, level=4):
-    """
-    Zapisuje wskazany poziom (level) z dużego obrazu WSI do pliku JPG.
-    """
-
     if not os.path.exists(tiff_path):
         print(f"BŁĄD: Nie znaleziono pliku: {tiff_path}")
         return

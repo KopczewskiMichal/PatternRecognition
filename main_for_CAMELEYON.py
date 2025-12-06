@@ -7,15 +7,15 @@ from torch.utils.data import DataLoader
 from tqdm import tqdm
 import sys
 
-# Zakładam, że w dataset.py masz obie klasy
 from dataset_cameleyon import CameleyonBagDataset, CameleyonTestDataset
 from model import Attention, GatedAttention
+import matplotlib.pyplot as plt
+import random
 
-# Ustawienia treningu
 parser = argparse.ArgumentParser(description='PyTorch CAMELEYON16 MIL Example')
 parser.add_argument('--bag_size', type=int, default=50, metavar='BS',
                     help='number of patches per bag (WSI)')
-parser.add_argument('--epochs', type=int, default=20, metavar='N',
+parser.add_argument('--epochs', type=int, default=10, metavar='N',
                     help='number of epochs to train')
 parser.add_argument('--lr', type=float, default=0.0005, metavar='LR',
                     help='learning rate (default: 0.0005)')
@@ -153,18 +153,57 @@ def test(loader):
     return test_loss, test_error
 
 
+def save_random_bag_visualization(loader, filename='bag_visualization.png'):
+    data_iter = iter(loader)
+    bag, label = next(data_iter)
+
+    bag = bag[0]
+    label_val = int(label[0].item())
+
+    num_samples = 10
+    total_patches = bag.shape[0]
+    indices = random.sample(range(total_patches), min(num_samples, total_patches))
+
+    fig, axes = plt.subplots(1, num_samples, figsize=(20, 3))
+    label_text = "TUMOR (Rak)" if label_val == 1 else "NORMAL (Zdrowy)"
+    fig.suptitle(f'Bag Label: {label_val} [{label_text}]', fontsize=16)
+
+    for i, idx in enumerate(indices):
+        img_tensor = bag[idx]  # [C, H, W]
+
+        img = img_tensor.permute(1, 2, 0).cpu().numpy()
+
+        # Obsługa skali szarości (jeśli C=1)
+        if img.shape[2] == 1:
+            img = img.squeeze(2)  # [H, W]
+            axes[i].imshow(img, cmap='gray', vmin=0, vmax=1)
+        else:
+            axes[i].imshow(img)
+
+        axes[i].axis('off')
+        axes[i].set_title(f'Idx: {idx}')
+
+    plt.tight_layout()
+    plt.savefig(filename)
+    plt.close()  # Zamknij, żeby nie wyświetlać w notebooku/oknie
+    print(f"-> Zapisano podgląd baga do pliku: {filename}")
+
+
 if __name__ == "__main__":
-    print('\nStart Training loop...')
-    best_test_error = float('inf')
-
-    for epoch in range(1, args.epochs + 1):
-        t_loss, t_err = train(epoch)
-        print(f'  Train Summary -> Loss: {t_loss:.4f}, Error: {t_err:.4f}')
-
-        test_loss, test_err = test(test_loader)
-
-        if test_err < best_test_error:
-            print(f'  [SAVE] New best Test Error: {test_err:.4f} (was {best_test_error:.4f}). Saving model...')
-            best_test_error = test_err
-            torch.save(model.state_dict(), 'best_model.pth')
-
+    save_random_bag_visualization(train_loader, filename='bag_visualization_train_level_x.png')
+    save_random_bag_visualization(test_loader, filename='bag_visualization_test_level_x.png')
+    #
+    # print('\nStart Training loop...')
+    # best_test_error = float('inf')
+    #
+    # for epoch in range(1, args.epochs + 1):
+    #     t_loss, t_err = train(epoch)
+    #     print(f'  Train Summary -> Loss: {t_loss:.4f}, Error: {t_err:.4f}')
+    #
+    #     test_loss, test_err = test(test_loader)
+    #
+    #     if test_err < best_test_error:
+    #         print(f'  [SAVE] New best Test Error: {test_err:.4f} (was {best_test_error:.4f}). Saving model...')
+    #         best_test_error = test_err
+    #         torch.save(model.state_dict(), 'best_model.pth')
+    #
