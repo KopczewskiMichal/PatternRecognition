@@ -5,6 +5,7 @@ import xml.etree.ElementTree as ET
 import numpy as np
 import openslide
 import torch
+from matplotlib import pyplot as plt
 from torch.utils.data import Dataset
 from torchvision import transforms
 from matplotlib.path import Path
@@ -12,7 +13,7 @@ from matplotlib.path import Path
 PATCH_SIZE = 28
 LEVEL = 3
 BAG_SIZE = 100
-BAGS_PER_SLIDE = 10
+BAGS_PER_SLIDE = 5
 TISSUE_THRESHOLD = 200
 
 
@@ -293,3 +294,73 @@ class CameleyonTestDataset(Dataset):
                 continue
 
         return patches
+
+
+
+def save_random_bag_visualization(dataset, target_class=None, output_dir='viz_samples', out_filename_addon=''):
+
+    if target_class is not None:
+        print(f"Snajpię baga o klasie: {target_class}...")
+
+        slide_indices = [i for i, x in enumerate(dataset.labels) if x == target_class]
+
+        if not slide_indices:
+            print(f"BŁĄD: W datasecie nie ma slajdów o klasie {target_class}!")
+            return
+
+        chosen_slide_idx = random.choice(slide_indices)
+        bags_per_slide = getattr(dataset, 'bags_per_slide', 1)
+        random_offset = random.randint(0, bags_per_slide - 1)
+
+        target_idx = chosen_slide_idx * bags_per_slide + random_offset
+
+    else:
+        print("Biorę całkowicie losowy bag...")
+        target_idx = random.randint(0, len(dataset) - 1)
+
+    found_bag, label_tensor = dataset[target_idx]
+    found_label = int(label_tensor.item())
+
+    os.makedirs(output_dir, exist_ok=True)
+
+    label_text = "TUMOR" if found_label == 1 else "NORMAL"
+    filename = f"bag_sample_{label_text}_{out_filename_addon}.png"
+    filepath = os.path.join(output_dir, filename)
+
+    num_samples = 10
+    total_patches = found_bag.shape[0]
+
+    indices = random.sample(range(total_patches), min(num_samples, total_patches))
+
+    fig, axes = plt.subplots(1, num_samples, figsize=(20, 3))
+    fig.suptitle(f'Bag Label: {found_label} [{label_text}] (Bag Idx: {target_idx})', fontsize=16)
+
+    if len(indices) < num_samples:
+        for j in range(len(indices), num_samples):
+            axes[j].axis('off')
+
+    for i, idx in enumerate(indices):
+        img_tensor = found_bag[idx]
+        img = img_tensor.permute(1, 2, 0).cpu().numpy()
+
+        is_padding = (img.max() == 0 and img.min() == 0)
+
+        if img.shape[2] == 1:
+            img = img.squeeze(2)
+            axes[i].imshow(img, cmap='gray', vmin=0, vmax=1)
+        else:
+            axes[i].imshow(img)
+
+        axes[i].axis('off')
+
+        title = f'Idx: {idx}'
+        if is_padding:
+            title += '\n(Padding)'
+
+        axes[i].set_title(title, fontsize=10)
+
+    plt.tight_layout()
+    plt.savefig(filepath)
+    plt.close()
+
+    print(f"-> Zapisano: {filepath}")
