@@ -1,6 +1,8 @@
 from __future__ import print_function
 
 import argparse
+import os
+
 import torch
 import torch.optim as optim
 from torch.utils.data import DataLoader
@@ -13,7 +15,7 @@ import matplotlib.pyplot as plt
 import random
 
 parser = argparse.ArgumentParser(description='PyTorch CAMELEYON16 MIL Example')
-parser.add_argument('--bag_size', type=int, default=50, metavar='BS',
+parser.add_argument('--bag_size', type=int, default=200, metavar='BS',
                     help='number of patches per bag (WSI)')
 parser.add_argument('--epochs', type=int, default=10, metavar='N',
                     help='number of epochs to train')
@@ -153,57 +155,93 @@ def test(loader):
     return test_loss, test_error
 
 
-def save_random_bag_visualization(loader, filename='bag_visualization.png'):
-    data_iter = iter(loader)
-    bag, label = next(data_iter)
+def save_random_bag_visualization(dataset, target_class=None, output_dir='viz_samples', out_filename_addon=''):
+    target_idx = -1
 
-    bag = bag[0]
-    label_val = int(label[0].item())
+    if target_class is not None:
+        print(f"Snajpię baga o klasie: {target_class}...")
+
+        slide_indices = [i for i, x in enumerate(dataset.labels) if x == target_class]
+
+        if not slide_indices:
+            print(f"BŁĄD: W datasecie nie ma slajdów o klasie {target_class}!")
+            return
+
+        chosen_slide_idx = random.choice(slide_indices)
+        bags_per_slide = getattr(dataset, 'bags_per_slide', 1)
+        random_offset = random.randint(0, bags_per_slide - 1)
+
+        target_idx = chosen_slide_idx * bags_per_slide + random_offset
+
+    else:
+        print("Biorę całkowicie losowy bag...")
+        target_idx = random.randint(0, len(dataset) - 1)
+
+    found_bag, label_tensor = dataset[target_idx]
+    found_label = int(label_tensor.item())
+
+    os.makedirs(output_dir, exist_ok=True)
+
+    label_text = "TUMOR" if found_label == 1 else "NORMAL"
+    filename = f"bag_sample_{label_text}_{out_filename_addon}.png"
+    filepath = os.path.join(output_dir, filename)
 
     num_samples = 10
-    total_patches = bag.shape[0]
+    total_patches = found_bag.shape[0]
+
     indices = random.sample(range(total_patches), min(num_samples, total_patches))
 
     fig, axes = plt.subplots(1, num_samples, figsize=(20, 3))
-    label_text = "TUMOR (Rak)" if label_val == 1 else "NORMAL (Zdrowy)"
-    fig.suptitle(f'Bag Label: {label_val} [{label_text}]', fontsize=16)
+    fig.suptitle(f'Bag Label: {found_label} [{label_text}] (Bag Idx: {target_idx})', fontsize=16)
+
+    if len(indices) < num_samples:
+        for j in range(len(indices), num_samples):
+            axes[j].axis('off')
 
     for i, idx in enumerate(indices):
-        img_tensor = bag[idx]  # [C, H, W]
-
+        img_tensor = found_bag[idx]
         img = img_tensor.permute(1, 2, 0).cpu().numpy()
 
-        # Obsługa skali szarości (jeśli C=1)
+        is_padding = (img.max() == 0 and img.min() == 0)
+
         if img.shape[2] == 1:
-            img = img.squeeze(2)  # [H, W]
+            img = img.squeeze(2)
             axes[i].imshow(img, cmap='gray', vmin=0, vmax=1)
         else:
             axes[i].imshow(img)
 
         axes[i].axis('off')
-        axes[i].set_title(f'Idx: {idx}')
+
+        title = f'Idx: {idx}'
+        if is_padding:
+            title += '\n(Padding)'
+
+        axes[i].set_title(title, fontsize=10)
 
     plt.tight_layout()
-    plt.savefig(filename)
-    plt.close()  # Zamknij, żeby nie wyświetlać w notebooku/oknie
-    print(f"-> Zapisano podgląd baga do pliku: {filename}")
+    plt.savefig(filepath)
+    plt.close()
+
+    print(f"-> Zapisano: {filepath}")
 
 
 if __name__ == "__main__":
-    save_random_bag_visualization(train_loader, filename='bag_visualization_train_level_x.png')
-    save_random_bag_visualization(test_loader, filename='bag_visualization_test_level_x.png')
-    #
-    # print('\nStart Training loop...')
-    # best_test_error = float('inf')
-    #
-    # for epoch in range(1, args.epochs + 1):
-    #     t_loss, t_err = train(epoch)
-    #     print(f'  Train Summary -> Loss: {t_loss:.4f}, Error: {t_err:.4f}')
-    #
-    #     test_loss, test_err = test(test_loader)
-    #
-    #     if test_err < best_test_error:
-    #         print(f'  [SAVE] New best Test Error: {test_err:.4f} (was {best_test_error:.4f}). Saving model...')
-    #         best_test_error = test_err
-    #         torch.save(model.state_dict(), 'best_model.pth')
-    #
+    # save_random_bag_visualization(train_set, target_class=0, output_dir='vis_lv_3', out_filename_addon='train_false')
+    # save_random_bag_visualization(train_set, target_class=1, output_dir='vis_lv_3', out_filename_addon='train_true')
+    # save_random_bag_visualization(test_set, target_class=0, output_dir='vis_lv_3', out_filename_addon='test_false')
+    # save_random_bag_visualization(test_set, target_class=1, output_dir='vis_lv_3', out_filename_addon='test_true')
+
+    print('\nStart Training loop...')
+    best_test_error = float('inf')
+
+    for epoch in range(1, args.epochs + 1):
+        t_loss, t_err = train(epoch)
+        print(f'  Train Summary -> Loss: {t_loss:.4f}, Error: {t_err:.4f}')
+
+        test_loss, test_err = test(test_loader)
+
+        if test_err < best_test_error:
+            print(f'  [SAVE] New best Test Error: {test_err:.4f} (was {best_test_error:.4f}). Saving model...')
+            best_test_error = test_err
+            torch.save(model.state_dict(), 'best_model.pth')
+
