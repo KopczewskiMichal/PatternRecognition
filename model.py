@@ -4,10 +4,10 @@ import torch.nn.functional as F
 
 
 class Attention(nn.Module):
-    def __init__(self, img_size):
+    def __init__(self, img_size, M_size = 500, L_size = 128,patch_size = 28):
         super(Attention, self).__init__()
-        self.M = 500
-        self.L = 128
+        self.M = M_size
+        self.L = L_size
         self.ATTENTION_BRANCHES = 1
         self.final_dim = int(((img_size - 12) / 4) ** 2 * 50)
 
