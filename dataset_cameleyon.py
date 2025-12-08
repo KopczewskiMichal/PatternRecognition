@@ -48,6 +48,9 @@ class CameleyonBagDataset(Dataset):
         if transform is None:
             self.transform = transforms.Compose([
                 transforms.Resize((PATCH_SIZE, PATCH_SIZE)),
+                transforms.RandomHorizontalFlip(),
+                transforms.RandomVerticalFlip(),
+                transforms.RandomRotation(90),
                 transforms.ToTensor(),
             ])
         else:

@@ -62,7 +62,7 @@ def test(loader):
             error, predicted_label = model.calculate_classification_error(data, bag_label)
             test_error += error
 
-            tqdm.write(f'[Test] Batch {batch_idx}: True: {int(bag_label.item())} | Pred: {int(predicted_label.item())}')
+            # tqdm.write(f'[Test] Batch {batch_idx}: True: {int(bag_label.item())} | Pred: {int(predicted_label.item())}')
 
             # Wypisujemy aktualny loss w pasku
             pbar.set_postfix({'TLoss': f'{loss.item():.4f}'})
@@ -79,11 +79,11 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='PyTorch CAMELEYON16 MIL Example')
     parser.add_argument('--bag_size', type=int, default=100, metavar='BS',
                         help='number of patches per bag (WSI)')
-    parser.add_argument('--epochs', type=int, default=30, metavar='N',
+    parser.add_argument('--epochs', type=int, default=10, metavar='N',
                         help='number of epochs to train')
-    parser.add_argument('--lr', type=float, default=0.0005, metavar='LR',
-                        help='learning rate (default: 0.0005)')
-    parser.add_argument('--reg', type=float, default=10e-5, metavar='R',
+    parser.add_argument('--lr', type=float, default=1e-4, metavar='LR',
+                        help='learning rate')
+    parser.add_argument('--reg', type=float, default=1e-3, metavar='R',
                         help='weight decay')
     parser.add_argument('--seed', type=int, default=1, metavar='S',
                         help='random seed (default: 1)')
