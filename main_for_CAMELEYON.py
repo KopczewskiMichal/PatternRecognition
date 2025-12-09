@@ -1,7 +1,6 @@
 from __future__ import print_function
 
 import argparse
-import os
 
 import torch
 import torch.optim as optim
@@ -82,6 +81,8 @@ if __name__ == "__main__":
                         help='number of patches per bag (WSI)')
     parser.add_argument('--epochs', type=int, default=10, metavar='N',
                         help='number of epochs to train')
+    parser.add_argument('--patch_size', type=int, default=96, metavar='N',
+                        help='patch size')
     parser.add_argument('--lr', type=float, default=1e-4, metavar='LR',
                         help='learning rate')
     parser.add_argument('--reg', type=float, default=1e-3, metavar='R',
@@ -98,10 +99,6 @@ if __name__ == "__main__":
                         help='Path to TRAIN tumor .tif files')
     parser.add_argument('--train_annot_dir', type=str, default=r"D:\CAMELEYON16\training\lesion_annotations",
                         help='Path to TRAIN annotation .xml files')
-
-    # --- ŚCIEŻKI TESTOWE (Bez XML) ---
-    parser.add_argument('--test_normal_dir', type=str, default=r"D:\CAMELEYON16\test\images\normal")
-    parser.add_argument('--test_tumor_dir', type=str, default=r"D:\CAMELEYON16\test\images\tumor")
 
     args = parser.parse_args()
     args.cuda = not args.no_cuda and torch.cuda.is_available()
@@ -174,9 +171,9 @@ if __name__ == "__main__":
 
     print('\n--- INIT MODEL ---')
     if args.model == 'attention':
-        model = Attention()
+        model = Attention(args.patch_size)
     elif args.model == 'gated_attention':
-        model = GatedAttention()
+        model = GatedAttention(args.patch_size)
 
     if args.cuda:
         model.cuda()

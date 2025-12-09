@@ -4,7 +4,7 @@ import torch.nn.functional as F
 
 
 class Attention(nn.Module):
-    def __init__(self):
+    def __init__(self, img_size):
         super(Attention, self).__init__()
         self.M = 500
         self.L = 128
@@ -20,7 +20,7 @@ class Attention(nn.Module):
         )
 
         self.feature_extractor_part2 = nn.Sequential(
-            nn.Linear(50 * 4 * 4, self.M),
+            nn.Linear((img_size-12) * 4, self.M),
             nn.ReLU(),
         )
 
@@ -70,7 +70,7 @@ class Attention(nn.Module):
         return neg_log_likelihood, A
 
 class GatedAttention(nn.Module):
-    def __init__(self):
+    def __init__(self, img_size):
         super(GatedAttention, self).__init__()
         self.M = 500
         self.L = 128
@@ -86,7 +86,7 @@ class GatedAttention(nn.Module):
         )
 
         self.feature_extractor_part2 = nn.Sequential(
-            nn.Linear(50 * 4 * 4, self.M),
+            nn.Linear((img_size-12) * 4, self.M),
             nn.ReLU(),
         )
 

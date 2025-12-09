@@ -10,7 +10,7 @@ from concurrent.futures import ProcessPoolExecutor
 from matplotlib.path import Path as MplPath
 
 LEVEL = 3
-PATCH_SIZE = 28
+PATCH_SIZE = 96
 TISSUE_THRESHOLD = 220
 PATCHES_PER_CLASS = 10000
 
@@ -144,34 +144,35 @@ def process_some_tasks(tasks: list[tuple[str, str, str, bool]], max_workers=4):
 
 
 if __name__ == '__main__':
-    # run_preprocessing(
-    #     input_dir=r"D:\CAMELEYON16\training\normal",
-    #     output_dir=r"D:\CAMELEYON16\preprocessed_L3\train\normal",
-    #     annot_dir=None,
-    #     is_tumor_set=False,
-    #     workers=14
-    # )
+    run_preprocessing(
+        input_dir=r"D:\CAMELEYON16\training\normal",
+        output_dir=r"D:\CAMELEYON16\preprocessed_L3_96\train\normal",
+        annot_dir=None,
+        is_tumor_set=False,
+        workers=8
+    )
 
     # process_some_tasks([(r'D:\\CAMELEYON16\\training\\tumor\\tumor_008.tif', r'D:\\CAMELEYON16\\preprocessed_L3\\train\\tumor', r'D:\\CAMELEYON16\\training\\lesion_annotations', True), (r'D:\\CAMELEYON16\\training\\tumor\\tumor_010.tif', r'D:\\CAMELEYON16\\preprocessed_L3\\train\\tumor', r'D:\\CAMELEYON16\\training\\lesion_annotations', True), (r'D:\\CAMELEYON16\\training\\tumor\\tumor_011.tif', r'D:\\CAMELEYON16\\preprocessed_L3\\train\\tumor', r'D:\\CAMELEYON16\\training\\lesion_annotations', True), (r'D:\\CAMELEYON16\\training\\tumor\\tumor_012.tif', r'D:\\CAMELEYON16\\preprocessed_L3\\train\\tumor', r'D:\\CAMELEYON16\\training\\lesion_annotations', True), (r'D:\\CAMELEYON16\\training\\tumor\\tumor_013.tif', r'D:\\CAMELEYON16\\preprocessed_L3\\train\\tumor', r'D:\\CAMELEYON16\\training\\lesion_annotations', True)])
 
-    # run_preprocessing(
-    #     input_dir=r"D:\CAMELEYON16\training\tumor",
-    #     output_dir=r"D:\CAMELEYON16\preprocessed_L3\train\tumor",
-    #     annot_dir=r"D:\CAMELEYON16\training\lesion_annotations",
-    #     is_tumor_set=True,
-    #     workers=14
+    run_preprocessing(
+        input_dir=r"D:\CAMELEYON16\training\tumor",
+        output_dir=r"D:\CAMELEYON16\preprocessed_L3_96\train\tumor",
+        annot_dir=r"D:\CAMELEYON16\training\lesion_annotations",
+        is_tumor_set=True,
+        workers=8
+    )
 
-    # run_preprocessing(
-    #     input_dir=r"D:\CAMELEYON16\test\images\tumor",
-    #     output_dir=r"D:\CAMELEYON16\preprocessed_L3\test\tumor",
-    #     annot_dir=None,
-    #     is_tumor_set=False, # Co prawda rak jest ale nie mamy adnotacji do niego
-    #     workers=8
-    # )
+    run_preprocessing(
+        input_dir=r"D:\CAMELEYON16\test\images\tumor",
+        output_dir=r"D:\CAMELEYON16\preprocessed_L3_96\test\tumor",
+        annot_dir=None,
+        is_tumor_set=False, # Co prawda rak jest ale nie mamy adnotacji do niego
+        workers=8
+    )
 
     run_preprocessing(
         input_dir=r"D:\CAMELEYON16\test\images\normal",
-        output_dir=r"D:\CAMELEYON16\preprocessed_L3\test\normal",
+        output_dir=r"D:\CAMELEYON16\preprocessed_L3_96\test\normal",
         annot_dir=None,
         is_tumor_set=False,
         workers=8
