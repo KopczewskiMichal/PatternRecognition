@@ -6,10 +6,11 @@ import os
 import torch
 import torch.optim as optim
 from torch.utils.data import DataLoader
+from torchvision import transforms
 from tqdm import tqdm
 import sys
 
-from dataset_cameleyon import CameleyonBagDataset, CameleyonTestDataset, save_random_bag_visualization
+from dataset_cameleyon import PreprocessedBagDataset
 from model import Attention, GatedAttention
 
 
@@ -116,45 +117,57 @@ if __name__ == "__main__":
         print('\nGPU is OFF!')
 
     print('\n--- LOADING TRAIN SET ---')
+    train_transform = transforms.Compose([
+        transforms.RandomVerticalFlip(),
+        transforms.RandomHorizontalFlip(),
+        transforms.RandomRotation(90),
+        transforms.ToTensor(),
+    ])
+
     try:
-        train_set = CameleyonBagDataset(
-            normal_dir=args.train_normal_dir,
-            tumor_dir=args.train_tumor_dir,
-            annot_dir=args.train_annot_dir,
-            bag_size=args.bag_size
+        train_ds = PreprocessedBagDataset(
+            root_dir=r"D:\CAMELEYON16\preprocessed_L3\train",
+            bag_size=100,
+            bags_per_slide=5,
+            tumor_ratio=0.5,
+            transform=train_transform
         )
+
         train_loader = DataLoader(
-            train_set,
+            train_ds,
             batch_size=1,
             shuffle=True,
             num_workers=12,
             pin_memory=True,
-            persistent_workers=False,
-            prefetch_factor=2
+            prefetch_factor=3
         )
 
-        print(f'Train Set: {len(train_set)} slides')
+        print(f'Train Set: {len(train_ds)} slides')
     except Exception as e:
         print(f"CRITICAL ERROR loading Train Set: {e}")
         sys.exit(1)
 
     print('\n--- LOADING TEST SET ---')
     try:
-        test_set = CameleyonTestDataset(
-            normal_dir=args.test_normal_dir,
-            tumor_dir=args.test_tumor_dir,
-            bag_size=args.bag_size
+        test_ds = PreprocessedBagDataset(
+            root_dir=r"D:\CAMELEYON16\preprocessed_L3\test",
+            bag_size=100,
+            bags_per_slide=5,
+            tumor_ratio=0.5,
+            is_train = False,
+            transform=train_transform
         )
+
         test_loader = DataLoader(
-            test_set,
+            test_ds,
             batch_size=1,
             shuffle=False,
-            num_workers=12,
+            num_workers=8,
             pin_memory=True,
-            persistent_workers=True,
-            prefetch_factor=2)
+            prefetch_factor=3
+        )
 
-        print(f'Test Set: {len(test_set)} slides')
+        print(f'Test Set: {len(test_ds)} slides')
     except Exception as e:
         print(f"CRITICAL ERROR loading Test Set: {e}")
         sys.exit(1)
