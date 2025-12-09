@@ -9,6 +9,7 @@ class Attention(nn.Module):
         self.M = 500
         self.L = 128
         self.ATTENTION_BRANCHES = 1
+        self.final_dim = int(((img_size - 12) / 4) ** 2 * 50)
 
         self.feature_extractor_part1 = nn.Sequential(
             nn.Conv2d(1, 20, kernel_size=5),
@@ -20,7 +21,7 @@ class Attention(nn.Module):
         )
 
         self.feature_extractor_part2 = nn.Sequential(
-            nn.Linear((img_size-12) * 4, self.M),
+            nn.Linear(self.final_dim, self.M),
             nn.ReLU(),
         )
 
@@ -39,7 +40,7 @@ class Attention(nn.Module):
         x = x.squeeze(0)
 
         H = self.feature_extractor_part1(x)
-        H = H.view(-1, 50 * 4 * 4)
+        H = H.view(-1, self.final_dim)
         H = self.feature_extractor_part2(H)  # KxM
 
         A = self.attention(H)  # KxATTENTION_BRANCHES
@@ -75,6 +76,7 @@ class GatedAttention(nn.Module):
         self.M = 500
         self.L = 128
         self.ATTENTION_BRANCHES = 1
+        self.final_dim = int(((self.img_size - 12) / 4) ** 2 * 50)
 
         self.feature_extractor_part1 = nn.Sequential(
             nn.Conv2d(1, 20, kernel_size=5),
@@ -86,7 +88,7 @@ class GatedAttention(nn.Module):
         )
 
         self.feature_extractor_part2 = nn.Sequential(
-            nn.Linear((img_size-12) * 4, self.M),
+            nn.Linear(self.final_dim, self.M),
             nn.ReLU(),
         )
 
@@ -111,7 +113,7 @@ class GatedAttention(nn.Module):
         x = x.squeeze(0)
 
         H = self.feature_extractor_part1(x)
-        H = H.view(-1, 50 * 4 * 4)
+        H = H.view(-1, self.final_dim)
         H = self.feature_extractor_part2(H)  # KxM
 
         A_V = self.attention_V(H)  # KxL

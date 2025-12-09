@@ -8,6 +8,7 @@ from torch.utils.data import DataLoader
 from torchvision import transforms
 from tqdm import tqdm
 import sys
+from matplotlib import pyplot as plt
 
 from dataset_cameleyon import PreprocessedBagDataset
 from model import Attention, GatedAttention
@@ -73,7 +74,36 @@ def test(loader):
     print(f'  Test Set -> Loss: {test_loss:.4f}, Error: {test_error:.4f}, Accuracy: {1.0 - test_error:.4f}')
     return test_loss, test_error
 
+def plot_and_save_history(history: list[tuple[float, float, float, float]], filename: str = 'training_history.png'):
+    train_loss = [h[0] for h in history]
+    train_acc = [h[1] for h in history]
+    val_loss = [h[2] for h in history]
+    val_acc = [h[3] for h in history]
+    epochs = range(1, len(history) + 1)
 
+    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(15, 6))
+
+    ax1.plot(epochs, train_loss, 'r-', label='Train Loss')
+    ax1.plot(epochs, val_loss, 'b-', label='Validation Loss')
+    ax1.set_title('Loss')
+    ax1.set_xlabel('Epoch')
+    ax1.set_ylabel('Loss')
+    ax1.legend()
+    ax1.grid(True)
+
+    ax2.plot(epochs, train_acc, 'r-', label='Train Accuracy')
+    ax2.plot(epochs, val_acc, 'b-', label='Validation Accuracy')
+    ax2.set_title('Accuracy')
+    ax2.set_xlabel('Epoch')
+    ax2.set_ylabel('Accuracy')
+    ax2.legend()
+    ax2.grid(True)
+
+    plt.tight_layout()
+    plt.savefig(filename)
+    plt.close(fig)
+
+    print(f"Plot saved: {filename}")
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='PyTorch CAMELEYON16 MIL Example')
@@ -83,7 +113,7 @@ if __name__ == "__main__":
                         help='number of epochs to train')
     parser.add_argument('--patch_size', type=int, default=96, metavar='N',
                         help='patch size')
-    parser.add_argument('--lr', type=float, default=1e-4, metavar='LR',
+    parser.add_argument('--lr', type=float, default=1e-5, metavar='LR',
                         help='learning rate')
     parser.add_argument('--reg', type=float, default=1e-3, metavar='R',
                         help='weight decay')
@@ -123,7 +153,7 @@ if __name__ == "__main__":
 
     try:
         train_ds = PreprocessedBagDataset(
-            root_dir=r"D:\CAMELEYON16\preprocessed_L3\train",
+            root_dir=r"D:\CAMELEYON16\preprocessed_L3_96\train",
             bag_size=100,
             bags_per_slide=5,
             tumor_ratio=0.5,
@@ -134,7 +164,7 @@ if __name__ == "__main__":
             train_ds,
             batch_size=1,
             shuffle=True,
-            num_workers=12,
+            num_workers=14,
             pin_memory=True,
             prefetch_factor=3
         )
@@ -147,7 +177,7 @@ if __name__ == "__main__":
     print('\n--- LOADING TEST SET ---')
     try:
         test_ds = PreprocessedBagDataset(
-            root_dir=r"D:\CAMELEYON16\preprocessed_L3\test",
+            root_dir=r"D:\CAMELEYON16\preprocessed_L3_96\test",
             bag_size=100,
             bags_per_slide=5,
             tumor_ratio=0.5,
@@ -161,7 +191,7 @@ if __name__ == "__main__":
             shuffle=False,
             num_workers=8,
             pin_memory=True,
-            prefetch_factor=3
+            # prefetch_factor=2
         )
 
         print(f'Test Set: {len(test_ds)} slides')
@@ -180,19 +210,18 @@ if __name__ == "__main__":
 
     optimizer = optim.Adam(model.parameters(), lr=args.lr, betas=(0.9, 0.999), weight_decay=args.reg)
 
-    # save_random_bag_visualization(train_set, target_class=0, output_dir='vis_lv_3', out_filename_addon='train_false')
-    # save_random_bag_visualization(train_set, target_class=1, output_dir='vis_lv_3', out_filename_addon='train_true')
-    # save_random_bag_visualization(test_set, target_class=0, output_dir='vis_lv_3', out_filename_addon='test_false')
-    # save_random_bag_visualization(test_set, target_class=1, output_dir='vis_lv_3', out_filename_addon='test_true')
-
     print('\nStart Training loop...')
     best_test_error = float('inf')
 
+    history = []
     for epoch in range(1, args.epochs + 1):
         t_loss, t_err = train(epoch)
         print(f'  Train Summary -> Loss: {t_loss:.4f}, Error: {t_err:.4f}')
 
         test_loss, test_err = test(test_loader)
+
+        history.append((t_loss, 1.0 - t_err, test_loss, 1.0 - test_err))
+        plot_and_save_history(history)
 
         if test_err < best_test_error:
             print(f'  [SAVE] New best Test Error: {test_err:.4f} (was {best_test_error:.4f}). Saving model...')
