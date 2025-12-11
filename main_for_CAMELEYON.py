@@ -137,9 +137,9 @@ if __name__ == "__main__":
     if args.cuda:
         torch.cuda.manual_seed(args.seed)
         torch.backends.cudnn.benchmark = True
-        print('\nGPU is ON! (Benchmark mode enabled)')
+        print('\nGPU is ON')
     else:
-        print('\nGPU is OFF!')
+        print('\nGPU is OFF')
 
     print('\n--- LOADING TRAIN SET ---')
     train_transform = transforms.Compose([

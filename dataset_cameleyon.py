@@ -47,13 +47,16 @@ class WholeSlideBagDataset(Dataset):
         # image_files.sort()
 
         if not image_files:
-            raise Exception("No images found")
+            raise Exception(f"No patches found in {slide_path}")
             # empty = torch.zeros(1, 1, 256, 256)
             # return empty, torch.tensor([float(label)])
 
         tensors = []
         for img_path in image_files:
             img = Image.open(img_path).convert('L')  # grayscale
+            if img.size[0] != 96 or img.size[1] != 96:
+                raise Exception(f'Incorrect size image {img_path}')
+
             if self.transform:
                 img = self.transform(img)
             tensors.append(img)

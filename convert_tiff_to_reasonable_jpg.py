@@ -34,7 +34,7 @@ def save_level_as_jpg(tiff_path, output_path, level=4):
         print(f"Wystąpił błąd: {e}")
 
 
-input_tiff = r"D:\CAMELEYON16\test\images\normal\test_014.tif"
+input_tiff = r"D:\CAMELEYON16\training\normal\normal_027.tif"
 output_jpg = './podglad_level4_im_test_24.jpg'
 
 save_level_as_jpg(input_tiff, output_jpg, level=4)
