@@ -60,6 +60,8 @@ def process_single_slide(args):
                 out_name = f"{y}_{x}.jpg"
                 patch_pil.save(os.path.join(slide_out_dir, out_name))
                 saved_count += 1
+        if saved_count == 0:
+            os.removedirs(slide_out_dir)
 
         return f"OK: {slide_name} -> {saved_count} patches"
 
