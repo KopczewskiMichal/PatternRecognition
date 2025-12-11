@@ -65,7 +65,6 @@ def test(loader):
 
             # tqdm.write(f'[Test] Batch {batch_idx}: True: {int(bag_label.item())} | Pred: {int(predicted_label.item())}')
 
-            # Wypisujemy aktualny loss w pasku
             pbar.set_postfix({'TLoss': f'{loss.item():.4f}'})
 
     test_loss /= len(loader)
@@ -152,7 +151,7 @@ if __name__ == "__main__":
 
     try:
         train_ds = WholeSlideBagDataset(
-            data_dir=r"D:\CAMELEYON16\preprocessed_L3_96\train",
+            data_dir=r"D:\CAMELEYON16\preprocessed\training",
             transform=train_transform
         )
 
@@ -173,7 +172,7 @@ if __name__ == "__main__":
     print('\n--- LOADING TEST SET ---')
     try:
         test_ds = WholeSlideBagDataset(
-            data_dir=r"D:\CAMELEYON16\preprocessed_L3_96\test",
+            data_dir=r"D:\CAMELEYON16\preprocessed\test",
             transform=train_transform
         )
 

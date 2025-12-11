@@ -6,9 +6,6 @@ from PIL import Image
 from tqdm import tqdm
 from concurrent.futures import ProcessPoolExecutor
 
-INPUT_DIR = r"D:\CAMELEYON16\training\tumor"
-OUTPUT_ROOT = r"D:\CAMELEYON16\preprocessed_grid"
-LEVEL = 4
 PATCH_SIZE = 96
 WORKERS = 10
 
@@ -70,10 +67,10 @@ def process_single_slide(args):
         return f"ERR: {slide_name} -> {str(e)}"
 
 
-def process_dir(input_dir:str, output_dir:str):
+def process_dir(input_dir:str, output_dir:str, level = 4):
     files = glob.glob(os.path.join(input_dir, "*.tif"))
     print(f"Found: {len(files)} slides. Start preprocessing on {WORKERS} threads...")
-    tasks = [(f, output_dir, PATCH_SIZE, LEVEL) for f in files]
+    tasks = [(f, output_dir, PATCH_SIZE, level) for f in files]
 
     with ProcessPoolExecutor(max_workers=WORKERS) as executor:
         results = list(tqdm(executor.map(process_single_slide, tasks), total=len(tasks), unit="slide"))
@@ -86,7 +83,9 @@ def process_dir(input_dir:str, output_dir:str):
 
 
 if __name__ == '__main__':
-    # process_dir(r"D:\CAMELEYON16\test\images\normal", r"D:\CAMELEYON16\preprocessed\test\normal")
-    # process_dir(r"D:\CAMELEYON16\test\images\tumor", r"D:\CAMELEYON16\preprocessed\test\tumor")
-    process_dir(r"D:\CAMELEYON16\training\normal", r"D:\CAMELEYON16\preprocessed\training\normal")
-    process_dir(r"D:\CAMELEYON16\training\tumor", r"D:\CAMELEYON16\preprocessed\training\tumor")
+    output_dir = r"D:\CAMELEYON16\preprocessed_lv_5"
+    level = 5
+    process_dir(r"D:\CAMELEYON16\test\images\normal", os.path.join(output_dir, r"test\normal"), level)
+    process_dir(r"D:\CAMELEYON16\test\images\tumor", os.path.join(output_dir, r"test\tumor"), level)
+    process_dir(r"D:\CAMELEYON16\training\normal", os.path.join(output_dir, r"training\normal"), level)
+    process_dir(r"D:\CAMELEYON16\training\tumor", os.path.join(output_dir, r"training\tumor"), level)
