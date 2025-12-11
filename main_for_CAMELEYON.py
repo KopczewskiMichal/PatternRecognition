@@ -1,6 +1,7 @@
 from __future__ import print_function
 
 import argparse
+import os.path
 
 import torch
 import torch.optim as optim
@@ -121,15 +122,14 @@ if __name__ == "__main__":
                         help='disables CUDA training')
     parser.add_argument('--model', type=str, default='attention', help='Choose b/w attention and gated_attention')
 
-    parser.add_argument('--train_normal_dir', type=str, default=r'D:\CAMELEYON16\training\normal',
-                        help='Path to TRAIN normal .tif files')
-    parser.add_argument('--train_tumor_dir', type=str, default=r"D:\CAMELEYON16\training\tumor",
-                        help='Path to TRAIN tumor .tif files')
-    parser.add_argument('--train_annot_dir', type=str, default=r"D:\CAMELEYON16\training\lesion_annotations",
-                        help='Path to TRAIN annotation .xml files')
+    parser.add_argument('--data_dir', type=str, default=r'D:\CAMELEYON16\preprocessed',
+                        help='Path to training and test files.')
+
 
     args = parser.parse_args()
     args.cuda = not args.no_cuda and torch.cuda.is_available()
+    training_dir = os.path.join(args.data_dir, 'training')
+    test_dir = os.path.join(args.data_dir, 'test')
 
     print(args)
 
@@ -151,7 +151,7 @@ if __name__ == "__main__":
 
     try:
         train_ds = WholeSlideBagDataset(
-            data_dir=r"D:\CAMELEYON16\preprocessed\training",
+            data_dir=training_dir,
             transform=train_transform
         )
 
@@ -172,7 +172,7 @@ if __name__ == "__main__":
     print('\n--- LOADING TEST SET ---')
     try:
         test_ds = WholeSlideBagDataset(
-            data_dir=r"D:\CAMELEYON16\preprocessed\test",
+            data_dir=test_dir,
             transform=train_transform
         )
 
