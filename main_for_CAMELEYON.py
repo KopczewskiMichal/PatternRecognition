@@ -10,7 +10,7 @@ from tqdm import tqdm
 import sys
 from matplotlib import pyplot as plt
 
-from dataset_cameleyon import PreprocessedBagDataset
+from dataset_cameleyon import WholeSlideBagDataset
 from model import Attention, GatedAttention
 
 
@@ -70,7 +70,6 @@ def test(loader):
 
     test_loss /= len(loader)
     test_error /= len(loader)
-
     print(f'  Test Set -> Loss: {test_loss:.4f}, Error: {test_error:.4f}, Accuracy: {1.0 - test_error:.4f}')
     return test_loss, test_error
 
@@ -152,11 +151,8 @@ if __name__ == "__main__":
     ])
 
     try:
-        train_ds = PreprocessedBagDataset(
-            root_dir=r"D:\CAMELEYON16\preprocessed_L3_96\train",
-            bag_size=100,
-            bags_per_slide=5,
-            tumor_ratio=0.5,
+        train_ds = WholeSlideBagDataset(
+            data_dir=r"D:\CAMELEYON16\preprocessed_L3_96\train",
             transform=train_transform
         )
 
@@ -164,7 +160,7 @@ if __name__ == "__main__":
             train_ds,
             batch_size=1,
             shuffle=True,
-            num_workers=14,
+            num_workers=12,
             pin_memory=True,
             prefetch_factor=3
         )
@@ -176,12 +172,8 @@ if __name__ == "__main__":
 
     print('\n--- LOADING TEST SET ---')
     try:
-        test_ds = PreprocessedBagDataset(
-            root_dir=r"D:\CAMELEYON16\preprocessed_L3_96\test",
-            bag_size=100,
-            bags_per_slide=5,
-            tumor_ratio=0.5,
-            is_train = False,
+        test_ds = WholeSlideBagDataset(
+            data_dir=r"D:\CAMELEYON16\preprocessed_L3_96\test",
             transform=train_transform
         )
 
