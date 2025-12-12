@@ -8,9 +8,8 @@ import torch.optim as optim
 import torch.utils.data as data_utils
 from torch.autograd import Variable
 
-from dataloader import MnistBags
-from model import Attention, GatedAttention
-
+from models.model import Attention, GatedAttention
+from data_utils.pseudo_bags_dataset import MilPseudoBagDataset
 # Training settings
 parser = argparse.ArgumentParser(description='PyTorch MNIST bags Example')
 parser.add_argument('--epochs', type=int, default=20, metavar='N',
@@ -46,29 +45,41 @@ if args.cuda:
 print('Load Train and Test Set')
 loader_kwargs = {'num_workers': 1, 'pin_memory': True} if args.cuda else {}
 
-train_loader = data_utils.DataLoader(MnistBags(target_number=args.target_number,
-                                               mean_bag_length=args.mean_bag_length,
-                                               var_bag_length=args.var_bag_length,
-                                               num_bag=args.num_bags_train,
-                                               seed=args.seed,
-                                               train=True),
-                                     batch_size=1,
-                                     shuffle=True,
-                                     **loader_kwargs)
+train_dataset = MilPseudoBagDataset(
+    split="id_train", 
+    bag_size=args.mean_bag_length,
+    num_bags=args.num_bags_train , 
+    flatten_channels=True
+)
 
-test_loader = data_utils.DataLoader(MnistBags(target_number=args.target_number,
-                                              mean_bag_length=args.mean_bag_length,
-                                              var_bag_length=args.var_bag_length,
-                                              num_bag=args.num_bags_test,
-                                              seed=args.seed,
-                                              train=False),
-                                    batch_size=1,
-                                    shuffle=False,
-                                    **loader_kwargs)
+# 2. Instantiate the DataLoader
+train_loader = data_utils.DataLoader(
+    train_dataset,
+    batch_size=1,       # This means 4 BAGS per step (40 images total if bag_size=10)
+    shuffle=True,       # Shuffle bags for training
+    num_workers=0,      # Parallel loading
+    pin_memory=True     # Faster transfer to GPU
+)
+
+test_dataset = MilPseudoBagDataset(
+    split="id_val", 
+    bag_size=args.mean_bag_length, 
+    num_bags=args.num_bags_test, 
+    flatten_channels=True
+)
+
+# 2. Instantiate the DataLoader
+test_loader = data_utils.DataLoader(
+    test_dataset,
+    batch_size=1,       # This means 4 BAGS per step (40 images total if bag_size=10)
+    shuffle=True,       # Shuffle bags for training
+    num_workers=0,      # Parallel loading
+    pin_memory=True     # Faster transfer to GPU
+)
 
 print('Init Model')
 if args.model=='attention':
-    model = Attention(img_size=28)
+    model = Attention(img_size=96, M_size=64,L_size=64)
 elif args.model=='gated_attention':
     model = GatedAttention()
 if args.cuda:
@@ -141,5 +152,7 @@ if __name__ == "__main__":
     print('Start Training')
     for epoch in range(1, args.epochs + 1):
         train(epoch)
+        # if epoch % 5 == 0:
+        #     test()
     print('Start Testing')
     test()
