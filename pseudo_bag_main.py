@@ -80,7 +80,7 @@ test_loader = data_utils.DataLoader(
 
 print('Init Model')
 if args.model=='attention':
-    model = Attention(M_size=64,L_size=64,patch_size=96)
+    model = Attention(img_size=96, M_size=64,L_size=64)
 elif args.model=='gated_attention':
     model = GatedAttention()
 if args.cuda:

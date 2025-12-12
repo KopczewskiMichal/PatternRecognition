@@ -68,7 +68,7 @@ test_loader = data_utils.DataLoader(MnistBags(target_number=args.target_number,
 
 print('Init Model')
 if args.model=='attention':
-    model = Attention()
+    model = Attention(img_size=28)
 elif args.model=='gated_attention':
     model = GatedAttention()
 if args.cuda:

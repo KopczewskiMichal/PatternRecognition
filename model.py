@@ -4,7 +4,7 @@ import torch.nn.functional as F
 
 
 class Attention(nn.Module):
-    def __init__(self, img_size, M_size = 500, L_size = 128,patch_size = 28):
+    def __init__(self, img_size, M_size = 500, L_size = 128):
         super(Attention, self).__init__()
         self.M = M_size
         self.L = L_size
