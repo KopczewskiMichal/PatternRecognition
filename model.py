@@ -72,6 +72,7 @@ class Attention(nn.Module):
 
 class GatedAttention(nn.Module):
     def __init__(self, img_size):
+        self.img_size = img_size
         super(GatedAttention, self).__init__()
         self.M = 500
         self.L = 128
@@ -144,3 +145,74 @@ class GatedAttention(nn.Module):
         neg_log_likelihood = -1. * (Y * torch.log(Y_prob) + (1. - Y) * torch.log(1. - Y_prob))  # negative log bernoulli
 
         return neg_log_likelihood, A
+
+class DINOAttention(nn.Module):
+    def __init__(self, unfreeze_blocks=0, model_name='dinov2_vitb14'):
+        super(DINOAttention, self).__init__()
+
+        self.backbone = torch.hub.load('facebookresearch/dinov2', model_name)
+
+        for param in self.backbone.parameters():
+            param.requires_grad = False
+
+        if unfreeze_blocks > 0:
+            for block in self.backbone.blocks[-unfreeze_blocks:]:
+                for param in block.parameters():
+                    param.requires_grad = True
+
+        self.embed_dim = self.backbone.embed_dim
+        self.M = 500
+        self.L = 128
+
+        self.feature_projection = nn.Sequential(
+            nn.Linear(self.embed_dim, self.M),
+            nn.ReLU()
+        )
+
+        self.attention = nn.Sequential(
+            nn.Linear(self.M, self.L),
+            nn.Tanh(),
+            nn.Linear(self.L, 1)
+        )
+
+        self.classifier = nn.Sequential(
+            nn.Linear(self.M, 1),
+            nn.Sigmoid()
+        )
+
+    def forward(self, x):
+        # x: [1, K, 1, H, W]
+        x = x.squeeze(0)
+        if x.shape[1] == 1:
+            x = x.repeat(1, 3, 1, 1)
+
+        # Dopasowanie do patch_size=14
+        if x.shape[-1] % 14 != 0 or x.shape[-2] % 14 != 0:
+            x = F.interpolate(x, size=(98, 98), mode='bilinear', align_corners=False)
+
+        H = self.backbone(x)
+        H = self.feature_projection(H)
+
+        A = self.attention(H)
+        A = torch.transpose(A, 1, 0)
+        A = F.softmax(A, dim=1)
+
+        Z = torch.mm(A, H)
+
+        Y_prob = self.classifier(Z)
+        Y_hat = torch.ge(Y_prob, 0.5).float()
+
+        return Y_prob, Y_hat, A
+
+    def calculate_objective(self, X, y):
+        Y_prob, Y_hat, A = self.forward(X)
+        y = y.float().view_as(Y_prob)
+        loss = F.binary_cross_entropy(Y_prob, y)
+        return loss, Y_prob
+
+    def calculate_classification_error(self, X, Y):
+        Y_prob, Y_hat, A = self.forward(X)
+        Y = Y.float().view_as(Y_hat)
+
+        error = 1. - Y_hat.eq(Y).float().mean().item()
+        return error, Y_hat

@@ -12,7 +12,7 @@ import sys
 from matplotlib import pyplot as plt
 
 from dataset_cameleyon import WholeSlideBagDataset
-from model import Attention, GatedAttention
+from model import Attention, GatedAttention, DINOAttention
 
 
 def train(epoch):
@@ -100,7 +100,7 @@ def plot_and_save_history(history: list[tuple[float, float, float, float]], prog
     ax2.grid(True)
 
     info_text = f"Parameters: {program_args}"
-    fig.text(0.5, 0.02, info_text, ha='center', fontsize=10, style='italic', alpha=0.8)
+    fig.text(0.5, 0.02, info_text, ha='center', fontsize=8, style='italic', alpha=0.8)
 
 
     plt.tight_layout(rect=[0, 0.05, 1, 1])
@@ -127,7 +127,7 @@ if __name__ == "__main__":
     parser.add_argument('--no-cuda', action='store_true', default=False,
                         help='disables CUDA training')
     parser.add_argument('--model', type=str, default='attention', help='Choose b/w attention and gated_attention')
-
+    parser.add_argument('--unfreeze_dino_blocks', type=int, default=2, help='Number of unfreezed DINO blocks at the end. Used only with dino encoder.')
     parser.add_argument('--data_dir', type=str, default=r'D:\CAMELEYON16\preprocessed',
                         help='Path to training and test files.')
 
@@ -202,6 +202,13 @@ if __name__ == "__main__":
     elif args.model == 'gated_attention':
         model = GatedAttention(args.patch_size)
 
+    match args.model:
+        case 'attention':
+            model = Attention(args.patch_size)
+        case 'gated_attention':
+            model = GatedAttention(args.patch_size)
+        case 'dino_attention':
+            model = DINOAttention(args.unfreeze_dino_blocks)
     if args.cuda:
         model.cuda()
 
