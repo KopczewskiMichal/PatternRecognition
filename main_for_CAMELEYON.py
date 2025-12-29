@@ -73,14 +73,15 @@ def test(loader):
     print(f'  Test Set -> Loss: {test_loss:.4f}, Error: {test_error:.4f}, Accuracy: {1.0 - test_error:.4f}')
     return test_loss, test_error
 
-def plot_and_save_history(history: list[tuple[float, float, float, float]], filename: str = 'training_history.png'):
+def plot_and_save_history(history: list[tuple[float, float, float, float]], program_args,
+                          filename: str = 'training_plots/training_history.png'):
     train_loss = [h[0] for h in history]
     train_acc = [h[1] for h in history]
     val_loss = [h[2] for h in history]
     val_acc = [h[3] for h in history]
     epochs = range(1, len(history) + 1)
 
-    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(15, 6))
+    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(15, 7))
 
     ax1.plot(epochs, train_loss, 'r-', label='Train Loss')
     ax1.plot(epochs, val_loss, 'b-', label='Validation Loss')
@@ -98,7 +99,12 @@ def plot_and_save_history(history: list[tuple[float, float, float, float]], file
     ax2.legend()
     ax2.grid(True)
 
-    plt.tight_layout()
+    info_text = f"Parameters: {program_args}"
+    fig.text(0.5, 0.02, info_text, ha='center', fontsize=10, style='italic', alpha=0.8)
+
+
+    plt.tight_layout(rect=[0, 0.05, 1, 1])
+
     plt.savefig(filename)
     plt.close(fig)
 
@@ -127,11 +133,11 @@ if __name__ == "__main__":
 
 
     args = parser.parse_args()
+    print(args)
     args.cuda = not args.no_cuda and torch.cuda.is_available()
     training_dir = os.path.join(args.data_dir, 'training')
     test_dir = os.path.join(args.data_dir, 'test')
 
-    print(args)
 
     torch.manual_seed(args.seed)
     if args.cuda:
@@ -212,7 +218,7 @@ if __name__ == "__main__":
         test_loss, test_err = test(test_loader)
 
         history.append((t_loss, 1.0 - t_err, test_loss, 1.0 - test_err))
-        plot_and_save_history(history)
+        plot_and_save_history(history, args)
 
         if test_err < best_test_error:
             print(f'  [SAVE] New best Test Error: {test_err:.4f} (was {best_test_error:.4f}). Saving model...')
