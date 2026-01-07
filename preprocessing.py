@@ -6,8 +6,8 @@ from PIL import Image
 from tqdm import tqdm
 from concurrent.futures import ProcessPoolExecutor
 
-PATCH_SIZE = 96
-WORKERS = 10
+PATCH_SIZE = 224
+WORKERS = 12
 
 WHITE_THRESHOLD = 220
 COLOR_VARIANCE = 20
@@ -85,7 +85,7 @@ def process_dir(input_dir:str, output_dir:str, level = 4):
 
 
 if __name__ == '__main__':
-    output_dir = r"D:\CAMELEYON16\preprocessed_lv_5"
+    output_dir = r"D:\CAMELEYON16\preprocessed_lv_5_ps224"
     level = 5
     process_dir(r"D:\CAMELEYON16\test\images\normal", os.path.join(output_dir, r"test\normal"), level)
     process_dir(r"D:\CAMELEYON16\test\images\tumor", os.path.join(output_dir, r"test\tumor"), level)

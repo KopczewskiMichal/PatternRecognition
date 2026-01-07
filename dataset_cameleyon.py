@@ -54,8 +54,8 @@ class WholeSlideBagDataset(Dataset):
         tensors = []
         for img_path in image_files:
             img = Image.open(img_path).convert('L')  # grayscale
-            if img.size[0] != 96 or img.size[1] != 96:
-                raise Exception(f'Incorrect size image {img_path}')
+            # if img.size[0] != 98 or img.size[1] != 98:
+            #     raise Exception(f'Incorrect size image {img_path}')
 
             if self.transform:
                 img = self.transform(img)

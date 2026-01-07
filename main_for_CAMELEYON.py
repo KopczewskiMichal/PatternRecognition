@@ -12,7 +12,7 @@ import sys
 from matplotlib import pyplot as plt
 
 from dataset_cameleyon import WholeSlideBagDataset
-from model import Attention, GatedAttention, DINOAttention
+from model import Attention, GatedAttention, DINOAttention, PhikonAttention
 
 
 def train(epoch):
@@ -126,9 +126,9 @@ if __name__ == "__main__":
                         help='random seed (default: 1)')
     parser.add_argument('--no-cuda', action='store_true', default=False,
                         help='disables CUDA training')
-    parser.add_argument('--model', type=str, default='attention', help='Choose b/w attention and gated_attention')
-    parser.add_argument('--unfreeze_dino_blocks', type=int, default=2, help='Number of unfreezed DINO blocks at the end. Used only with dino encoder.')
-    parser.add_argument('--data_dir', type=str, default=r'D:\CAMELEYON16\preprocessed',
+    parser.add_argument('--model', type=str, default='attention', help='Choose b/w attention and gated_attention or more')
+    parser.add_argument('--unfreeze_blocks', type=int, default=2, help='Number of unfreezed DINO blocks at the end. Used only with dino encoder.')
+    parser.add_argument('--data_dir', type=str, default=r'D:\CAMELEYON16\preprocessed_lv_5_ps98',
                         help='Path to training and test files.')
 
 
@@ -165,9 +165,9 @@ if __name__ == "__main__":
             train_ds,
             batch_size=1,
             shuffle=True,
-            num_workers=12,
+            num_workers=0,
             pin_memory=True,
-            prefetch_factor=3
+            # prefetch_factor=2
         )
 
         print(f'Train Set: {len(train_ds)} slides')
@@ -186,7 +186,7 @@ if __name__ == "__main__":
             test_ds,
             batch_size=1,
             shuffle=False,
-            num_workers=8,
+            num_workers=2,
             pin_memory=True,
             # prefetch_factor=2
         )
@@ -208,7 +208,9 @@ if __name__ == "__main__":
         case 'gated_attention':
             model = GatedAttention(args.patch_size)
         case 'dino_attention':
-            model = DINOAttention(args.unfreeze_dino_blocks)
+            model = DINOAttention(args.unfreeze_blocks)
+        case 'phikon_attention':
+            model = PhikonAttention(args.unfreeze_blocks)
     if args.cuda:
         model.cuda()
 
@@ -220,9 +222,11 @@ if __name__ == "__main__":
     history = []
     for epoch in range(1, args.epochs + 1):
         t_loss, t_err = train(epoch)
+        torch.cuda.empty_cache()
         print(f'  Train Summary -> Loss: {t_loss:.4f}, Error: {t_err:.4f}')
 
         test_loss, test_err = test(test_loader)
+        torch.cuda.empty_cache()
 
         history.append((t_loss, 1.0 - t_err, test_loss, 1.0 - test_err))
         plot_and_save_history(history, args)
