@@ -12,7 +12,7 @@ import sys
 from matplotlib import pyplot as plt
 
 from dataset_cameleyon import WholeSlideBagDataset
-from model import Attention, GatedAttention, DINOAttention, PhikonAttention
+from model import Attention, GatedAttention, DINOAttention, PhikonAttention, GatedDinoAttention
 
 
 def train(epoch):
@@ -165,9 +165,9 @@ if __name__ == "__main__":
             train_ds,
             batch_size=1,
             shuffle=True,
-            num_workers=0,
+            num_workers=6,
             pin_memory=True,
-            # prefetch_factor=2
+            prefetch_factor=2
         )
 
         print(f'Train Set: {len(train_ds)} slides')
@@ -209,6 +209,8 @@ if __name__ == "__main__":
             model = GatedAttention(args.patch_size)
         case 'dino_attention':
             model = DINOAttention(args.unfreeze_blocks)
+        case 'gated_dino_attention':
+            model = GatedDinoAttention(args.unfreeze_blocks)
         case 'phikon_attention':
             model = PhikonAttention(args.unfreeze_blocks)
     if args.cuda:
