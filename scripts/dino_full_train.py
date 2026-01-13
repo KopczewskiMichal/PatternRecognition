@@ -12,7 +12,7 @@ import sys
 from matplotlib import pyplot as plt
 
 from data_utils.dataset_cameleyon import WholeSlideBagDataset
-from models.model import Attention, GatedAttention
+from models.model import Attention, GatedAttention, SimpleCNNEncoder
 
 
 def train(epoch):
@@ -124,7 +124,8 @@ if __name__ == "__main__":
 
     parser.add_argument('--data_dir', type=str, default=r'D:\CAMELEYON16\preprocessed',
                         help='Path to training and test files.')
-
+    parser.add_argument('--pretrained_weights', type=str, default=None, 
+                        help='Path to DINO pretrained .pth file')
 
     args = parser.parse_args()
     args.cuda = not args.no_cuda and torch.cuda.is_available()
@@ -192,16 +193,43 @@ if __name__ == "__main__":
         sys.exit(1)
 
     print('\n--- INIT MODEL ---')
-    if args.model == 'attention':
-        model = Attention(args.patch_size)
-    elif args.model == 'gated_attention':
-        model = GatedAttention(args.patch_size)
+    
+    # 1. Initialize the Encoder
+    encoder = SimpleCNNEncoder(img_size=args.patch_size)
+    
+    # 2. Load DINO Weights (If provided)
+    if args.pretrained_weights:
+        print(f"Loading SSL weights from: {args.pretrained_weights}")
+        state_dict = torch.load(args.pretrained_weights)
+        
+        # DINO usually saves the whole model. We might need to filter keys if heads were saved.
+        # If you used the script above, it saves exactly the encoder state dict.
+        msg = encoder.load_state_dict(state_dict, strict=True)
+        print(f"Weights loaded: {msg}")
+    else:
+        print("No pretrained weights provided. Training from scratch (Random Init).")
+
+    # 3. Initialize Full MIL Model
+    model = GatedAttention(encoder=encoder)
 
     if args.cuda:
         model.cuda()
 
-    optimizer = optim.Adam(model.parameters(), lr=args.lr, betas=(0.9, 0.999), weight_decay=args.reg)
-
+    # 4. Optimization Strategy (Fine-Tuning)
+    if args.pretrained_weights:
+        # OPTION A: Fine-tune everything (Encoder LR smaller than Classifier LR)
+        params = [
+            {'params': model.feature_extractor.parameters(), 'lr': args.lr * 0.1}, # Slow learning for encoder
+            {'params': model.classifier.parameters(), 'lr': args.lr},
+            {'params': model.attention_V.parameters(), 'lr': args.lr},
+            {'params': model.attention_U.parameters(), 'lr': args.lr},
+            {'params': model.attention_w.parameters(), 'lr': args.lr}
+        ]
+        optimizer = optim.Adam(params, weight_decay=args.reg)
+    else:
+        # Standard training
+        optimizer = optim.Adam(model.parameters(), lr=args.lr, weight_decay=args.reg)
+        
     print('\nStart Training loop...')
     best_test_error = float('inf')
 
