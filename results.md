@@ -39,4 +39,4 @@ Po przeprowadzeniu wcześniejszych eksperymentów zostało zauważone że DINO z
 ![training_history_gated_dino_s_reg_765.png](training_plots/training_history_gated_dino_s_reg_765.png)
 
 #### s_reg o zmniejszonym lr
-![training_history_gated_dino_s_reg_765.png](training_plots/training_history_gated_dino_s_reg_765.png)
+![training_history_gated_dino_768_smaller_lr.png](training_plots/training_history_gated_dino_768_smaller_lr.png)

@@ -12,7 +12,7 @@ import sys
 from matplotlib import pyplot as plt
 
 from dataset_cameleyon import WholeSlideBagDataset
-from model import Attention, GatedAttention, DINOAttention, PhikonAttention, GatedDinoAttention
+from model import Attention, GatedAttention, DINOAttention, PhikonAttention, GatedDinoAttention, PreTrainedDINOAttention
 
 
 def train(epoch):
@@ -112,8 +112,8 @@ def plot_and_save_history(history: list[tuple[float, float, float, float]], prog
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='PyTorch CAMELEYON16 MIL Example')
-    parser.add_argument('--bag_size', type=int, default=100, metavar='BS',
-                        help='number of patches per bag (WSI)')
+    # parser.add_argument('--bag_size', type=int, default=100, metavar='BS',
+    #                     help='number of patches per bag (WSI)')
     parser.add_argument('--epochs', type=int, default=10, metavar='N',
                         help='number of epochs to train')
     parser.add_argument('--patch_size', type=int, default=96, metavar='N',
@@ -165,7 +165,7 @@ if __name__ == "__main__":
             train_ds,
             batch_size=1,
             shuffle=True,
-            num_workers=6,
+            num_workers=10,
             pin_memory=True,
             prefetch_factor=2
         )
@@ -186,9 +186,9 @@ if __name__ == "__main__":
             test_ds,
             batch_size=1,
             shuffle=False,
-            num_workers=2,
+            num_workers=10,
             pin_memory=True,
-            # prefetch_factor=2
+            prefetch_factor=2
         )
 
         print(f'Test Set: {len(test_ds)} slides')
@@ -211,6 +211,8 @@ if __name__ == "__main__":
             model = DINOAttention(args.unfreeze_blocks)
         case 'gated_dino_attention':
             model = GatedDinoAttention(args.unfreeze_blocks)
+        case 'dino_fine_tuned':
+            model = PreTrainedDINOAttention("dinov2_vits14_reg_histo_98.pth",args.unfreeze_blocks)
         case 'phikon_attention':
             model = PhikonAttention(args.unfreeze_blocks)
     if args.cuda:

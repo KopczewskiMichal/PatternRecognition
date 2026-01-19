@@ -217,6 +217,108 @@ class DINOAttention(nn.Module):
         error = 1. - Y_hat.eq(Y).float().mean().item()
         return error, Y_hat
 
+
+
+
+class PreTrainedDINOAttention(nn.Module):
+    def __init__(self, weights_path=None, unfreeze_blocks=2, model_name='dinov2_vits14_reg'):
+        super(PreTrainedDINOAttention, self).__init__()
+
+        # 1. Ładujemy bazę (Small z rejestrami - musi się zgadzać z pre-trainingiem)
+        self.backbone = torch.hub.load('facebookresearch/dinov2', model_name)
+
+        # 2. Ładowanie Twoich wag z Etapu 1
+        if weights_path:
+            # map_location zapewnia, że wagi wejdą na odpowiednie urządzenie
+            state_dict = torch.load(weights_path, map_location='cpu')
+            self.backbone.load_state_dict(state_dict)
+            print(f"INFO: Załadowano wagi histopatologiczne z: {weights_path}")
+
+        # 3. Mrożenie wszystkiego
+        for param in self.backbone.parameters():
+            param.requires_grad = False
+
+        # 4. Odmrażanie końcówki (Fine-tuning domenowy)
+        if unfreeze_blocks > 0:
+            # Odblokowujemy ostatnie bloki i normę końcową
+            for block in self.backbone.blocks[-unfreeze_blocks:]:
+                for param in block.parameters():
+                    param.requires_grad = True
+            for param in self.backbone.norm.parameters():
+                param.requires_grad = True
+            print(f"INFO: Odmrożono {unfreeze_blocks} ostatnie bloki ViT.")
+
+        self.embed_dim = self.backbone.embed_dim  # Dla ViT-S to 384
+        self.M = 500
+        self.L = 256
+
+        self.feature_projection = nn.Sequential(
+            nn.Linear(self.embed_dim, self.M),
+            nn.ReLU(),
+            nn.Dropout(0.25)
+        )
+
+        self.attention = nn.Sequential(
+            nn.Linear(self.M, self.L),
+            nn.Tanh(),
+            nn.Linear(self.L, 1)
+        )
+
+        self.classifier = nn.Sequential(
+            nn.Linear(self.M, 1),
+            nn.Sigmoid()
+        )
+
+    def forward(self, x):
+        # x: [1, K, 1, H, W]
+        x = x.squeeze(0)
+
+        # Konwersja na 3 kanały dla DINO
+        if x.shape[1] == 1:
+            x = x.repeat(1, 3, 1, 1)
+
+        # Interpolacja do rozmiaru 98 (wielokrotność 14)
+        if x.shape[-1] != 98 or x.shape[-2] != 98:
+            x = F.interpolate(x, size=(98, 98), mode='bilinear', align_corners=False)
+
+        # Ekstrakcja cech - jeśli model jest zamrożony, wyłączamy gradienty dla oszczędności
+        if any(p.requires_grad for p in self.backbone.parameters()):
+            H = self.backbone(x)
+        else:
+            with torch.no_grad():
+                H = self.backbone(x)
+
+        H = self.feature_projection(H)
+
+        # Mechanizm Attention
+        A = self.attention(H)  # K x 1
+        A = torch.transpose(A, 1, 0)  # 1 x K
+        A = F.softmax(A, dim=1)  # Softmax po wszystkich patchach
+
+        # Agregacja (Ważona suma cech)
+        Z = torch.mm(A, H)  # 1 x M
+
+        Y_prob = self.classifier(Z)
+        Y_hat = torch.ge(Y_prob, 0.5).float()
+
+        return Y_prob, Y_hat, A
+
+    # Metody calculate_objective i calculate_classification_error zostają bez zmian
+
+    def calculate_objective(self, X, y):
+        Y_prob, Y_hat, A = self.forward(X)
+        y = y.float().view_as(Y_prob)
+        loss = F.binary_cross_entropy(Y_prob, y)
+        return loss, Y_prob
+
+    def calculate_classification_error(self, X, Y):
+        Y_prob, Y_hat, A = self.forward(X)
+        Y = Y.float().view_as(Y_hat)
+
+        error = 1. - Y_hat.eq(Y).float().mean().item()
+        return error, Y_hat
+
+
 class PhikonAttention(nn.Module):
     def __init__(self, unfreeze_blocks=0):
         super(PhikonAttention, self).__init__()
@@ -292,19 +394,15 @@ class GatedDinoAttention(nn.Module):
     def __init__(self, unfreeze_blocks=0, model_name='dinov2_vits14_reg'):
         super(GatedDinoAttention, self).__init__()
 
-        # Ładowanie DINOv2
         self.backbone = torch.hub.load('facebookresearch/dinov2', model_name)
 
-        # Mrożenie wag
         for param in self.backbone.parameters():
             param.requires_grad = False
 
-        # Odblokowanie wybranych bloków od końca
         if unfreeze_blocks > 0:
             for block in self.backbone.blocks[-unfreeze_blocks:]:
                 for param in block.parameters():
                     param.requires_grad = True
-            # Zazwyczaj warto też odblokować normę końcową jeśli odblokowujesz bloki
             for param in self.backbone.norm.parameters():
                 param.requires_grad = True
 
