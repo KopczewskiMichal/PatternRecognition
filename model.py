@@ -151,7 +151,8 @@ class DINOAttention(nn.Module):
     def __init__(self, unfreeze_blocks=0, model_name='dinov2_vitb14'):
         super(DINOAttention, self).__init__()
 
-        self.backbone = torch.hub.load('facebookresearch/dinov2', model_name)
+        # self.backbone = torch.hub.load('facebookresearch/dinov2', model_name)
+        self.backbone = torch.hub.load('facebookresearch/dinov2', 'dinov2_vitb14')
 
         for param in self.backbone.parameters():
             param.requires_grad = False

@@ -5,6 +5,8 @@ import openslide
 from PIL import Image
 from tqdm import tqdm
 from concurrent.futures import ProcessPoolExecutor
+import matplotlib.pyplot as plt
+import matplotlib.patches as patches
 
 PATCH_SIZE = 224
 WORKERS = 12
@@ -83,11 +85,58 @@ def process_dir(input_dir:str, output_dir:str, level = 4):
         for err in errors: print(err)
 
 
+def visualize_preprocessing(tif_path, patch_size=98, level=6):
+    """
+    Wizualizuje siatkę patchy na slajdzie.
+    Zielone ramki = patche zaakceptowane.
+    Przyciemnione obszary = patche odrzucone (tło/szum).
+    """
+    slide = openslide.OpenSlide(tif_path)
+    eff_level = level if level < slide.level_count else slide.level_count - 1
+    w_raw, h_raw = slide.level_dimensions[eff_level]
+
+    img = slide.read_region((0, 0), eff_level, (w_raw, h_raw)).convert("RGB")
+    slide.close()
+
+    img_arr = np.array(img)
+    h, w, _ = img_arr.shape
+
+    fig, ax = plt.subplots(figsize=(12, 12))
+    ax.imshow(img_arr)
+
+    for y in range(0, (h // patch_size) * patch_size, patch_size):
+        for x in range(0, (w // patch_size) * patch_size, patch_size):
+            patch = img_arr[y: y + patch_size, x: x + patch_size]
+
+            mean_intensity = np.mean(patch)
+            mean_rgb = np.mean(patch, axis=(0, 1))
+            rgb_spread = np.max(mean_rgb) - np.min(mean_rgb)
+
+            is_accepted = (mean_intensity <= WHITE_THRESHOLD) and (rgb_spread >= COLOR_VARIANCE)
+
+            if is_accepted:
+                rect = patches.Rectangle((x, y), patch_size, patch_size, linewidth=1,
+                                         edgecolor='lime', facecolor='none', alpha=0.8)
+            else:
+                rect = patches.Rectangle((x, y), patch_size, patch_size, linewidth=0,
+                                         edgecolor='none', facecolor='black', alpha=0.5)
+
+            ax.add_patch(rect)
+
+    plt.title(f"Preprocessing Visualization")
+    plt.axis('off')
+    plt.savefig('wizualizacja.png', bbox_inches='tight')
+    plt.show()
+
+
 
 if __name__ == '__main__':
-    output_dir = r"D:\CAMELEYON16\preprocessed_lv_5_ps224"
+    # output_dir = r"D:\CAMELEYON16\preprocessed_lv_5_ps224"
     level = 5
-    process_dir(r"D:\CAMELEYON16\test\images\normal", os.path.join(output_dir, r"test\normal"), level)
-    process_dir(r"D:\CAMELEYON16\test\images\tumor", os.path.join(output_dir, r"test\tumor"), level)
-    process_dir(r"D:\CAMELEYON16\training\normal", os.path.join(output_dir, r"training\normal"), level)
-    process_dir(r"D:\CAMELEYON16\training\tumor", os.path.join(output_dir, r"training\tumor"), level)
+    # process_dir(r"D:\CAMELEYON16\test\images\normal", os.path.join(output_dir, r"test\normal"), level)
+    # process_dir(r"D:\CAMELEYON16\test\images\tumor", os.path.join(output_dir, r"test\tumor"), level)
+    # process_dir(r"D:\CAMELEYON16\training\normal", os.path.join(output_dir, r"training\normal"), level)
+    # process_dir(r"D:\CAMELEYON16\training\tumor", os.path.join(output_dir, r"training\tumor"), level)
+    process_single_slide((r"C:\Users\kopcz\Downloads\test_002.tif", r"C\Users\kopcz\Downloads\tmp", PATCH_SIZE ,level))
+    # visualize_preprocessing(r"C:\Users\kopcz\Downloads\test_002.tif", level=5)
+
