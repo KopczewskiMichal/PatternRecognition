@@ -11,8 +11,8 @@ from tqdm import tqdm
 import sys
 from matplotlib import pyplot as plt
 
-from dataset_cameleyon import WholeSlideBagDataset
-from model import Attention, GatedAttention
+from data_utils.dataset_cameleyon import WholeSlideBagDataset
+from models.model import Attention, GatedAttention
 
 
 def train(epoch):
@@ -218,4 +218,3 @@ if __name__ == "__main__":
             print(f'  [SAVE] New best Test Error: {test_err:.4f} (was {best_test_error:.4f}). Saving model...')
             best_test_error = test_err
             torch.save(model.state_dict(), 'best_model.pth')
-
